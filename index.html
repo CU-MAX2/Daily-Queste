@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Window - Level Up</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --system-bg: rgba(0, 20, 40, 0.92);
+            --system-border: #00b4d8;
+            --system-glow: #00f0ff;
+            --text-main: #e0f7fa;
+            --text-dim: #80deea;
+            --danger-glow: #5ea9ee;
+            --success-glow: #4351d3;
+            --xp-color: #fbfbfc;
+            --bg-void: #020405;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-void);
+            color: var(--text-main);
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        /* System Window */
+        .system-window {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 500px;
+            background: var(--system-bg);
+            border: 2px solid var(--system-border);
+            box-shadow: 0 0 30px var(--system-border);
+            padding: 0;
+            animation: windowSpawn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes windowSpawn {
+            0% { transform: scale(0.8) translateY(-50px); opacity: 0; filter: blur(10px); }
+            100% { transform: scale(1) translateY(0); opacity: 1; filter: blur(0); }
+        }
+
+        /* Header Stats */
+        .window-header {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--system-border);
+        }
+
+        .player-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .player-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+            text-shadow: 0 0 5px var(--system-glow);
+        }
+
+        .player-level {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--xp-color);
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+        }
+
+        /* XP Bar */
+        .xp-bar-container {
+            width: 100%;
+            height: 12px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--text-dim);
+            position: relative;
+            margin-top: 5px;
+        }
+
+        .xp-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0099ff, var(--xp-color));
+            width: 0%;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 10px var(--xp-color);
+        }
+
+        .xp-text {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-family: 'Share Tech Mono', monospace;
+            color: #000;
+            font-weight: bold;
+            text-shadow: 0 0 2px #fff;
+        }
+
+        /* Daily Quest Body */
+        .quest-body {
+            padding: 20px;
+            flex-grow: 1;
+        }
+
+        .section-title {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--text-dim);
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+            padding-bottom: 5px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .quest-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            padding: 12px;
+            background: rgba(0, 240, 255, 0.05);
+            border-left: 3px solid var(--system-border);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .quest-item.completed {
+            border-left-color: var(--success-glow);
+            background: rgba(0, 230, 118, 0.1);
+        }
+
+        .quest-item.penalty {
+            border-left-color: var(--danger-glow);
+            background: rgba(255, 61, 0, 0.1);
+        }
+
+        .quest-checkbox {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-dim);
+            margin-right: 15px;
+            cursor: pointer;
+            position: relative;
+            flex-shrink: 0;
+            background: transparent;
+        }
+
+        .quest-checkbox:checked {
+            background: var(--success-glow);
+            border-color: var(--success-glow);
+        }
+
+        .quest-checkbox:checked::after {
+            content: '✔';
+            position: absolute;
+            color: #000;
+            font-size: 14px;
+            top: -2px;
+            left: 2px;
+        }
+
+        .quest-content {
+            flex-grow: 1;
+        }
+
+        .quest-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .quest-amount {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--system-glow);
+        }
+
+        .penalty-badge {
+            font-size: 0.7rem;
+            background: var(--danger-glow);
+            color: #fff;
+            padding: 2px 6px;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        /* Edit Mode */
+        .quest-input {
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--system-border);
+            color: #fff;
+            padding: 5px;
+            width: 100%;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .system-btn {
+            background: transparent;
+            border: 1px solid var(--system-border);
+            color: var(--system-glow);
+            padding: 8px 16px;
+            font-family: 'Share Tech Mono', monospace;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .system-btn:hover {
+            background: var(--system-glow);
+            color: #000;
+            box-shadow: 0 0 15px var(--system-glow);
+        }
+
+        .system-btn.danger { border-color: var(--danger-glow); color: var(--danger-glow); }
+        .system-btn.danger:hover { background: var(--danger-glow); color: #000; }
+
+        .edit-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .window-footer {
+            padding: 12px;
+            border-top: 1px solid var(--system-border);
+            text-align: center;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-dim);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--system-bg);
+            border: 1px solid var(--success-glow);
+            padding: 15px;
+            color: #fff;
+            z-index: 100;
+            box-shadow: 0 0 20px var(--system-border);
+            transform: translateX(200%);
+            transition: transform 0.3s ease;
+        }
+        .notification.show { transform: translateX(0); }
+        .notification.penalty-msg { border-color: var(--danger-glow); }
+
+    </style>
+</head>
+<body>
+
+    <canvas id="bg-canvas"></canvas>
+
+    <!-- Notification Area -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Main System Window -->
+    <div class="system-window" id="mainWindow">
+        <div class="window-header">
+            <div class="player-top-row">
+                <div class="player-name">Discipline</div>
+                <div class="player-level" id="levelDisplay">LV. 1</div>
+            </div>
+            <div class="xp-bar-container">
+                <div class="xp-bar-fill" id="xpBar" style="width: 0%"></div>
+                <div class="xp-text" id="xpText">0 / 100 XP</div>
+            </div>
+        </div>
+
+        <div class="quest-body">
+            <div class="section-title">
+                <span>DAILY QUESTS</span>
+                <span id="dateDisplay"></span>
+            </div>
+
+            <div id="questListContainer">
+                <!-- Rendered via JS -->
+            </div>
+
+            <!-- Edit Controls -->
+            <div id="editModeControls" style="display: none; margin-top: 20px; border-top: 1px dashed var(--system-border); padding-top: 15px;">
+                <div class="row g-2 mb-2">
+                    <div class="col-7">
+                        <input type="text" id="newQuestName" class="quest-input" placeholder="Quest Name">
+                    </div>
+                    <div class="col-3">
+                        <input type="number" id="newQuestAmt" class="quest-input" placeholder="Amt">
+                    </div>
+                    <div class="col-2">
+                        <input type="text" id="newQuestUnit" class="quest-input" placeholder="Unit">
+                    </div>
+                </div>
+                <div class="edit-controls">
+                    <button class="system-btn" onclick="addQuest()">ADD</button>
+                    <button class="system-btn danger" onclick="toggleEditMode()">CLOSE</button>
+                </div>
+            </div>
+
+            <div class="row mt-4 g-2">
+                <div class="col-6">
+                    <button class="system-btn w-100" onclick="toggleEditMode()">EDIT QUESTS</button>
+                </div>
+                <div class="col-6">
+                    <button class="system-btn w-100" onclick="manualReset()">FORCE NEW DAY</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="window-footer">
+            SYSTEM ACTIVE
+        </div>
+    </div>
+
+    <script>
+        // ========== CONFIGURATION ==========
+        const XP_PER_LEVEL = 100; // XP required to level up (can scale later if needed)
+        
+        // Default Template
+        const DEFAULT_QUESTS = [
+            { id: 1, name: "Push-ups", base: 100, current: 100, unit: "reps", completed: false },
+            { id: 2, name: "Sit-ups", base: 100, current: 100, unit: "reps", completed: false },
+            { id: 3, name: "Squats", base: 100, current: 100, unit: "reps", completed: false },
+            { id: 4, name: "Running", base: 10, current: 10, unit: "km", completed: false }
+        ];
+
+        // ========== STATE ==========
+        let state = {
+            level: 1,
+            xp: 0,
+            quests: [],
+            lastDate: null,
+            isEditing: false
+        };
+
+        // ========== PERSISTENCE ==========
+        function loadState() {
+            const saved = localStorage.getItem('sl_system_v2');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state = { ...state, ...parsed };
+            } else {
+                state.quests = JSON.parse(JSON.stringify(DEFAULT_QUESTS));
+            }
+            checkNewDay();
+        }
+
+        function saveState() {
+            localStorage.setItem('sl_system_v2', JSON.stringify(state));
+        }
+
+        // ========== DATE & PENALTY LOGIC ==========
+        function getTodayString() {
+            return new Date().toDateString();
+        }
+
+        function checkNewDay() {
+            const today = getTodayString();
+            document.getElementById('dateDisplay').innerText = new Date().toLocaleDateString();
+
+            // If it's the first time OR a new day
+            if (state.lastDate !== today) {
+                let penaltyApplied = false;
+
+                state.quests.forEach(q => {
+                    if (!q.completed) {
+                        // PENALTY: Add base to current
+                        q.current += q.base;
+                        penaltyApplied = true;
+                    } else {
+                        // RESET: Set current back to base
+                        q.current = q.base;
+                    }
+                    // Reset completion status for the new day
+                    q.completed = false;
+                });
+
+                saveState();
+                
+                if (penaltyApplied) {
+                    showNotification("PENALTY APPLIED: Incomplete quests increased.", true);
+                } else if (state.lastDate !== null) {
+                    showNotification("NEW DAY: Quests reset successfully.", false);
+                }
+
+                state.lastDate = today;
+                saveState();
+            }
+        }
+
+        function manualReset() {
+            if(confirm("Force a new day? This will apply penalties to incomplete quests.")) {
+                // Trick the system into thinking yesterday was today, so the next load is 'new'
+                let d = new Date();
+                d.setDate(d.getDate() - 1);
+                state.lastDate = d.toDateString();
+                checkNewDay();
+                renderAll();
+            }
+        }
+
+        // ========== RENDERING ==========
+        function renderAll() {
+            renderLevel();
+            renderQuests();
+        }
+
+        function renderLevel() {
+            document.getElementById('levelDisplay').innerText = `LV. ${state.level}`;
+            const currentXp = state.xp;
+            const xpPercent = (currentXp / XP_PER_LEVEL) * 100;
+            document.getElementById('xpBar').style.width = `${xpPercent}%`;
+            document.getElementById('xpText').innerText = `${currentXp} / ${XP_PER_LEVEL} XP`;
+        }
+
+        function renderQuests() {
+            const container = document.getElementById('questListContainer');
+            container.innerHTML = '';
+
+            state.quests.forEach((quest, index) => {
+                const div = document.createElement('div');
+                const isPenalty = quest.current > quest.base;
+                div.className = `quest-item ${quest.completed ? 'completed' : ''} ${isPenalty ? 'penalty' : ''}`;
+
+                if (state.isEditing) {
+                    div.innerHTML = `
+                        <div style="flex-grow:1; display:flex; gap:5px;">
+                            <input type="text" class="quest-input" value="${quest.name}" onchange="updateQuest(${index}, 'name', this.value)" style="width:50%">
+                            <input type="number" class="quest-input" value="${quest.base}" onchange="updateQuest(${index}, 'base', this.value)" style="width:20%">
+                            <input type="text" class="quest-input" value="${quest.unit}" onchange="updateQuest(${index}, 'unit', this.value)" style="width:15%">
+                        </div>
+                        <button class="system-btn danger" style="margin-left:5px; padding:2px 8px;" onclick="deleteQuest(${index})">X</button>
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <input type="checkbox" class="quest-checkbox" ${quest.completed ? 'checked' : ''} onchange="toggleComplete(${index})">
+                        <div class="quest-content">
+                            <div class="quest-title">
+                                <span>${quest.name}</span>
+                                <span class="quest-amount">${quest.current} ${quest.unit}</span>
+                            </div>
+                            ${isPenalty ? '<span class="penalty-badge">PENALTY ACTIVE</span>' : ''}
+                        </div>
+                    `;
+                }
+                container.appendChild(div);
+            });
+        }
+
+        // ========== ACTIONS ==========
+        function toggleComplete(index) {
+            const quest = state.quests[index];
+            quest.completed = !quest.completed;
+
+            if (quest.completed) {
+                // Grant XP based on amount done
+                const gainedXp = quest.current; // 1 XP per unit
+                addXp(gainedXp);
+                showNotification(`+${gainedXp} XP Gained!`, false);
+            } else {
+                // Optional: Remove XP if unchecked? For now, we'll leave XP gained to keep it simple RPG style.
+            }
+
+            saveState();
+            renderAll();
+        }
+
+        function addXp(amount) {
+            state.xp += amount;
+            // Level Up Loop (in case huge XP gain)
+            while (state.xp >= XP_PER_LEVEL) {
+                state.xp -= XP_PER_LEVEL;
+                state.level++;
+                showNotification(`LEVEL UP! You are now Level ${state.level}`, false);
+            }
+        }
+
+        function toggleEditMode() {
+            state.isEditing = !state.isEditing;
+            document.getElementById('editModeControls').style.display = state.isEditing ? 'block' : 'none';
+            renderQuests();
+        }
+
+        function updateQuest(index, key, value) {
+            if (key === 'base') value = Number(value);
+            state.quests[index][key] = value;
+            // If base changes, update current if it's not a penalty situation? 
+            // For simplicity, let's just save. Reset logic handles syncing usually.
+            saveState();
+        }
+
+        function addQuest() {
+            const name = document.getElementById('newQuestName').value || "New Quest";
+            const base = Number(document.getElementById('newQuestAmt').value) || 1;
+            const unit = document.getElementById('newQuestUnit').value || "times";
+
+            state.quests.push({
+                id: Date.now(),
+                name: name,
+                base: base,
+                current: base, // Start fresh
+                unit: unit,
+                completed: false
+            });
+
+            document.getElementById('newQuestName').value = "";
+            document.getElementById('newQuestAmt').value = "";
+            document.getElementById('newQuestUnit').value = "";
+
+            saveState();
+            renderQuests();
+        }
+
+        function deleteQuest(index) {
+            state.quests.splice(index, 1);
+            saveState();
+            renderQuests();
+        }
+
+        // ========== UI HELPERS ==========
+        function showNotification(msg, isPenalty) {
+            const el = document.getElementById('notification');
+            el.innerText = msg;
+            el.className = "notification show" + (isPenalty ? " penalty-msg" : "");
+            
+            setTimeout(() => {
+                el.className = "notification";
+            }, 3000);
+        }
+
+        // ========== CANVAS BACKGROUND ==========
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const particles = [];
+        for(let i=0; i<30; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                speedY: -0.3 + Math.random() * -0.2
+            });
+        }
+
+        function animateBg() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#00b4d8';
+            
+            particles.forEach(p => {
+                ctx.globalAlpha = 0.3;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                
+                p.y += p.speedY;
+                p.x += Math.sin(p.y * 0.005); 
+                if(p.y < 0) p.y = canvas.height;
+            });
+            requestAnimationFrame(animateBg);
+        }
+        animateBg();
+
+        // ========== INIT ==========
+        loadState();
+        renderAll();
+
+    </script>
+</body>
+</html>
